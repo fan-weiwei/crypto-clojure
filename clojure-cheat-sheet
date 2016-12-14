@@ -1,0 +1,12 @@
+Drip test:
+
+$ time drip -cp clojure.jar clojure.main -e '(* 6 6)' # 36
+
+
+Lein profile:
+
+~/.lein/leinrc
+
+Starting a nRepl server:
+
+$ lein trampoline repl :headless
