@@ -1,9 +1,5 @@
-(ns sabaki
+(ns sabaki.core
   (:gen-class))
-
-(def hex-string "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d")
-(def irl-string "I'm killing your brain like a poisonous mushroom")
-
 
 (def ^:private base64-chars
   "Base64 Characters in the right order."
@@ -16,7 +12,7 @@
              (range (int \0) (inc (int \9)))))
       [\+ \/ \=])))
 
-(def hex-chars [\0 \1 \2 \3 \4 \5 \6 \7 \8 \9 \a \b \c \d \e \f])
+(def ^:private hex-chars [\0 \1 \2 \3 \4 \5 \6 \7 \8 \9 \a \b \c \d \e \f])
 
 (defn chr-to-nibble [c] (Character/digit c 16))
 
@@ -57,63 +53,77 @@
   )
 )
 
-(defn sextuple-to-byte [string]
-  (reduce + (for [x (range 0 6)]
-    (bit-shift-left (Character/digit (nth string x) 2) (- 5 x))
-  ))
+(defn take-n-bits-to-byte [n, string]
+  (reduce + (for [x (range 0 n)]
+              (bit-shift-left (Character/digit (nth string x) 2) (- (- n 1) x))
+   ))
 )
 
-(defn bits-to-base64 [string]
+(defn bits-to-base64Bytes [string]
   (->> string
        (partition 6)
-       (map sextuple-to-byte)
+       (map #(take-n-bits-to-byte 6 %))
+  )
+)
 
+(defn base64Bytes-to-string [bytes]
+  (->> bytes
+      (map #(get base64-chars %))
+      (apply str)
   )
 )
 
 (defn bits-to-base64String [string]
   (->> string
-       (partition 6)
-       (map sextuple-to-byte)
-       (map #(get base64-chars %))
-       (apply str)
+       (bits-to-base64Bytes)
+       (base64Bytes-to-string)
   )
 )
 
 (defn pairwise-xor [pair]
-  (bit-xor (nth pair 0) (nth pair 1))
-  )
+  (apply bit-xor pair)
+)
 
 (defn xor-bits [str1 str2]
   (map pairwise-xor
        (map list (map #(Character/digit % 2) str1) (map #(Character/digit % 2) str2)))
-  )
+)
 
-(defn bits-to-nibble [string]
+(defn bits-to-nibbles [string]
   (->> string
        (partition 4)
        (map #(reduce + (for [x (range 0 4)]
                          (bit-shift-left (nth % x) (- 3 x))
                          )))
-       )
   )
+)
+
+(defn nibbles-to-hexstring [bytes]
+  (->> bytes
+       (map #(get hex-chars %))
+       (apply str)
+  )
+)
+
+(defn bytes-to-string [bytes]
+  (->> bytes
+     (map char)
+     (apply str)
+   )
+)
 
 (defn bits-to-hexString [string]
   (->> string
-       (nibbles-to-bytes)
-       (map #(get hex-chars %))
-       (apply str)
-       )
+       (bits-to-nibbles)
+       (nibbles-to-hexstring)
   )
+)
 
 (defn bits-to-string [string]
   (->> string
-       (bits-to-nibble)
+       (bits-to-nibbles)
        (nibbles-to-bytes)
-       (map char)
-       (apply str)
-       )
+       (bytes-to-string)
   )
+)
 
-(defn -main [& args]
-  (println (bits-to-base64String (string-to-bits hex-string))))
